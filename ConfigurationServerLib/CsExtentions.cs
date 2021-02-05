@@ -7,9 +7,10 @@ namespace ConfigurationServerLib
         public static IConfigurationBuilder AddRedisConfigServer(
             this IConfigurationBuilder builder,
             string connectionString,
-            string appName)
+            string appName,
+            string keyField = "name")
         {
-            return builder.Add(new CsJsonConfigurationSource(connectionString, appName));
+            return builder.Add(new CsJsonConfigurationSource(connectionString, appName, keyField));
         }
     }
 }

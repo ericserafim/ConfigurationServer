@@ -2,7 +2,9 @@
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace ConfigurationServerLib
 {
@@ -11,10 +13,13 @@ namespace ConfigurationServerLib
         private readonly ConnectionMultiplexer _connection;
         private readonly ISubscriber _subscriber;
         private readonly string _appName;
+        private readonly string _keyField;
 
-        public CsJsonConfigurationProvider(string connectionSttring, string appName)
+        public CsJsonConfigurationProvider(string connectionSttring, string appName, string keyField)
         {
             _appName = appName;
+            _keyField = keyField;
+
             _connection = ConnectionMultiplexer.Connect(connectionSttring);
             _subscriber = _connection.GetSubscriber();
 
@@ -31,11 +36,12 @@ namespace ConfigurationServerLib
         public override void Load()
         {
             var db = _connection.GetDatabase();
-            var settings = db.HashGetAll(new RedisKey(_appName));
-
-            Data = settings
-                .Select(x => new KeyValuePair<string, string>(x.Name, x.Value))
-                .ToDictionary(k => k.Key, v => v.Value);
+            var settingsJson = db.StringGet(new RedisKey(_appName));
+            
+            using(var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(settingsJson.ToString())))
+            {
+                Data = JsonConfigurationFileParserCustom.Parse(memoryStream, _keyField);
+            }
         }
     }
 }

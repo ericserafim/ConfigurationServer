@@ -23,12 +23,9 @@ namespace ConfigurationServer.UI
         public async Task SaveApplicationAsync(ApplicationEntity entity)
         {
             var key = new RedisKey(entity.Name);
-            var hashSettings = entity.Settings.Select(x => new HashEntry(x.Key, x.Value)).ToArray();
+            var settings = new RedisValue(entity.JsonContent);                        
 
-            //Handle with removed hash sets
-            await _database.KeyDeleteAsync(key);
-
-            await _database.HashSetAsync(key, hashSettings);
+            await _database.StringSetAsync(key, settings);
         }
 
         public async Task PublishChangesAsync(string applicationName)
@@ -55,15 +52,11 @@ namespace ConfigurationServer.UI
         }
 
         public async Task<ApplicationEntity> GetApplicationAsync(string name)
-        {
-            var hashSet = await _database.HashGetAllAsync(new RedisKey(name));
-
+        {            
             return new ApplicationEntity
             {
                 Name = name,
-                Settings = hashSet
-                 .Select(x => new KeyValuePair<string, string>(x.Name, x.Value))
-                 .ToDictionary(k => k.Key, v => v.Value)
+                JsonContent = _database.StringGet(new RedisKey(name))
             };
         }
     }
