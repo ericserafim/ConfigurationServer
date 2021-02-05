@@ -1,0 +1,67 @@
+﻿@page "/fetchdata"
+
+@inject RedisService RedisService
+@inject NavigationManager NavigationManager
+
+<h3>Aplications</h3>
+
+<div class="alert alert-success @(DisplayAlert ? "visible" : "invisible")" role="alert">
+    @AlertMessage
+    <button type="button" class="btn btn-close button-close" @onclick="() => DisplayAlert = false">X</button>
+</div>
+
+
+@if (applications == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var application in applications)
+            {
+                <tr>
+                    <td>@application.Name</td>
+                    <td>
+                        <span class="oi oi-pencil" style="cursor: pointer;" aria-hidden="true" @onclick="(e => EditApplication(e, application))"></span>
+                        <span class="oi oi-x" style="cursor: pointer;" aria-hidden="true" @onclick="(e => RemoveApplication(e, application))"></span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool DisplayAlert { get; set; } = false;
+    public string AlertMessage { get; set; }
+
+    private List<ApplicationEntity> applications;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        applications = await RedisService.GetAllApplicationsAsync();
+    }
+
+    private void EditApplication(MouseEventArgs e, ApplicationEntity application)
+    {
+        NavigationManager.NavigateTo("/" + application.Name);
+    }
+
+    private async Task RemoveApplication(MouseEventArgs e, ApplicationEntity application)
+    {
+        await RedisService.RemoveApplicationAsync(application);
+        applications.Remove(application);
+
+        DisplayAlert = true;
+        AlertMessage = $"'{application.Name}' has been deleted.";
+    }
+}

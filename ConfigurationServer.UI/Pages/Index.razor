@@ -1,0 +1,136 @@
+﻿@page "/"
+@page "/{appName}"
+@inject RedisService RedisService
+
+<h3>Application</h3>
+
+<div class="alert alert-success @(DisplayAlert ? "visible" : "invisible")" role="alert">
+    @AlertMessage
+    <button type="button" class="btn btn-close button-close" @onclick="() => DisplayAlert = false">X</button>
+</div>
+
+<EditForm Model="Application">
+    <div class="form-group">
+        <label for="appname">Application Name</label>
+        <input type="text" class="form-control" id="appname" placeholder="Enter name" @bind-value="@Application.Name">
+    </div>
+
+    <button type="button" class="btn btn-primary" @onclick="SaveAppliction">Save</button>
+    <button type="button" class="btn btn-success" @onclick="PublishAppliction">Publish</button>
+    <button type="button" class="btn btn-danger" @onclick="RemoveAppliction">Remove</button>
+
+    <hr />
+
+    <h4>Settings</h4>
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label for="settingname">Key</label>
+                <input type="text" class="form-control" id="settingname" placeholder="Enter key" @bind-value="@SettingKey">
+            </div>
+            <div class="form-group">
+                <label for="settingvalue">Value</label>
+                <input type="text" class="form-control" id="settingvalue" placeholder="Enter value" @bind-value="@SettingValue">
+            </div>
+            <button type="button" class="btn btn-primary" @onclick="AddSetting">Add</button>
+        </div>
+
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Key</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var setting in Application.Settings)
+                {
+                    <tr>
+                        <td>@setting.Key</td>
+                        <td>@setting.Value</td>
+                        <td>
+                            <span class="oi oi-pencil" style="cursor: pointer;" aria-hidden="true" @onclick="(e => EditSetting(e, setting))"></span>
+                            <span class="oi oi-x" style="cursor: pointer;" aria-hidden="true" @onclick="(e => RemoveSetting(e, setting.Key))"></span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</EditForm>
+
+
+@code {
+    private bool DisplayAlert { get; set; } = false;
+    public string AlertMessage { get; set; }
+
+
+    private string SettingKey { get; set; }
+    private string SettingValue { get; set; }
+
+    [Parameter]
+    public string AppName { get; set; }
+
+    private ApplicationEntity Application { get; set; } = new ApplicationEntity();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (AppName != null)
+        {
+            Application = await RedisService.GetApplicationAsync(AppName);
+        }
+
+
+        await Task.CompletedTask;
+    }
+
+    private void AddSetting()
+    {
+        if (Application.Settings.ContainsKey(SettingKey))
+        {
+            Application.Settings.Remove(SettingKey);
+        }
+
+        Application.Settings.TryAdd(SettingKey, SettingValue);
+    }
+
+    private void EditSetting(MouseEventArgs e, KeyValuePair<string, string> setting)
+    {
+        SettingKey = setting.Key;
+        SettingValue = setting.Value;
+    }
+
+    private void RemoveSetting(MouseEventArgs e, string key)
+    {
+        Application.Settings.Remove(key);
+    }
+
+    private async Task SaveAppliction()
+    {
+        await RedisService.SaveApplicationAsync(Application);
+
+        DisplayAlert = true;
+        AlertMessage = $"'{Application.Name}' has been saved.";
+    }
+
+    private async Task PublishAppliction()
+    {
+        await RedisService.PublishChangesAsync(Application.Name);
+
+        DisplayAlert = true;
+        AlertMessage = $"'{Application.Name}' has been published.";
+    }
+
+    private async Task RemoveAppliction()
+    {
+        await RedisService.RemoveApplicationAsync(Application);
+        
+        DisplayAlert = true;
+        AlertMessage = $"'{Application.Name}' has been removed.";
+        Application = new ApplicationEntity();
+    }
+}
