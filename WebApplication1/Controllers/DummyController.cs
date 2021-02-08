@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace WebApplication1.Controllers
 {
@@ -8,21 +7,17 @@ namespace WebApplication1.Controllers
     [Route("[controller]")]
     public class DummyController : ControllerBase
     {       
-        private readonly ILogger<DummyController> _logger;
-        private readonly IConfiguration _configuration;        
+        private readonly IOptionsSnapshot<MySettings> _mySettings;
 
-        public DummyController(
-            ILogger<DummyController> logger,             
-            IConfiguration configuration)
-        {
-            _logger = logger;
-            _configuration = configuration;            
+        public DummyController(IOptionsSnapshot<MySettings> mySettings)
+        {            
+            _mySettings = mySettings;      
         }
 
         [HttpGet]
         public ActionResult Get()
         {
-            return Ok(_configuration.AsEnumerable());
+            return Ok(_mySettings);
         }
     }
 }
