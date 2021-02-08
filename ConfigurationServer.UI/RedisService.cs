@@ -48,7 +48,7 @@ namespace ConfigurationServer.UI
                 apps.Add(new ApplicationEntity { Name = key.ToString() });
             }
 
-            return apps;
+            return apps.OrderBy(x => x.Name).ToList();
         }
 
         public async Task<ApplicationEntity> GetApplicationAsync(string name)

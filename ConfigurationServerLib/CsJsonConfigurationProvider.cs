@@ -37,7 +37,10 @@ namespace ConfigurationServerLib
         {
             var db = _connection.GetDatabase();
             var settingsJson = db.StringGet(new RedisKey(_appName));
-            
+
+            if (string.IsNullOrEmpty(settingsJson))
+                return;
+
             using(var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(settingsJson.ToString())))
             {
                 Data = JsonConfigurationFileParserCustom.Parse(memoryStream, _keyField);
